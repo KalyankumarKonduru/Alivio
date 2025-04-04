@@ -15,7 +15,18 @@ const { protect, authorize } = require('../middleware/auth');
 // @route   POST api/events
 // @desc    Create a new event
 // @access  Private (Organizers only)
-router.post('/', protect, authorize('organizer'), createEvent);
+router.post('/', protect, authorize('organizer'), (req, res) => {
+  const upload = req.app.get('upload');
+  console.log('Received POST /api/events request'); // Debug: Log when the route is hit
+  upload.single('mainImage')(req, res, async (err) => {
+    if (err) {
+      console.error('Multer error:', err.message); // Debug: Log multer errors
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    console.log('Multer processed file:', req.file); // Debug: Log the processed file
+    createEvent(req, res);
+  });
+});
 
 // @route   GET api/events
 // @desc    Get all events
@@ -45,7 +56,15 @@ router.get('/:id', getEventById);
 // @route   PUT api/events/:id
 // @desc    Update event
 // @access  Private (Organizers only)
-router.put('/:id', protect, authorize('organizer'), updateEvent);
+router.put('/:id', protect, authorize('organizer'), (req, res) => {
+  const upload = req.app.get('upload');
+  upload.single('mainImage')(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    updateEvent(req, res);
+  });
+});
 
 // @route   DELETE api/events/:id
 // @desc    Delete event

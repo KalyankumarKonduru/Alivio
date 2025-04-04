@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { 
   Container, 
   Grid, 
@@ -99,6 +100,18 @@ const useStyles = makeStyles((theme) => ({
   description: {
     whiteSpace: 'pre-line',
   },
+  errorMessage: {
+    color: theme.palette.error.main,
+    textAlign: 'center',
+    marginTop: theme.spacing(2),
+  },
+  debugSection: {
+    backgroundColor: '#f5f5f5',
+    padding: theme.spacing(2),
+    marginTop: theme.spacing(2),
+    borderRadius: theme.spacing(1),
+    border: '1px dashed #ccc',
+  },
 }));
 
 const EventDetails = ({ 
@@ -111,13 +124,47 @@ const EventDetails = ({
 }) => {
   const classes = useStyles();
   const { id } = useParams();
+  const navigate = useNavigate();
   const [selectedTickets, setSelectedTickets] = useState({});
   const [mapCenter, setMapCenter] = useState({ lat: 40.7128, lng: -74.0060 }); // Default to NYC
+  const [mapError, setMapError] = useState(null);
+  
+  // For direct API testing
+  const [directApiTickets, setDirectApiTickets] = useState([]);
+  const [directApiLoading, setDirectApiLoading] = useState(false);
+  const [directApiError, setDirectApiError] = useState(null);
 
   useEffect(() => {
     getEventById(id);
     getTicketsByEvent(id);
+    
+    // Direct API test
+    const fetchTicketsDirectly = async () => {
+      setDirectApiLoading(true);
+      try {
+        const response = await axios.get(`/api/tickets/event/${id}`);
+        console.log('Direct API response:', response.data);
+        setDirectApiTickets(response.data.data || []);
+        setDirectApiError(null);
+      } catch (error) {
+        console.error('Direct API error:', error);
+        setDirectApiError(error.message || 'Error fetching tickets directly');
+        setDirectApiTickets([]);
+      } finally {
+        setDirectApiLoading(false);
+      }
+    };
+    
+    fetchTicketsDirectly();
   }, [getEventById, getTicketsByEvent, id]);
+  
+  // Debug logs
+  useEffect(() => {
+    console.log('Event loaded:', event);
+    console.log('Tickets loaded from Redux:', tickets);
+    console.log('Tickets loading state:', ticketsLoading);
+    console.log('Direct API tickets:', directApiTickets);
+  }, [event, tickets, ticketsLoading, directApiTickets]);
 
   useEffect(() => {
     if (event && event.venue && event.venue.location && event.venue.location.coordinates) {
@@ -134,8 +181,16 @@ const EventDetails = ({
   };
 
   const handleAddToCart = (ticket) => {
+    // Get the selected quantity (default to 1 if not specified)
     const quantity = selectedTickets[ticket._id] || 1;
+    
+    // Add to cart
     addToCart(ticket, event, quantity, ticket.price);
+    
+    // Show confirmation and redirect to cart page
+    setTimeout(() => {
+      navigate('/cart');
+    }, 500);
   };
 
   const formatDate = (dateString) => {
@@ -143,7 +198,10 @@ const EventDetails = ({
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  if (eventLoading || ticketsLoading) {
+  // Get the Google API key from the environment variable
+  const googleApiKey = process.env.REACT_APP_GOOGLE_API_KEY;
+
+  if (eventLoading) {
     return (
       <div className={classes.loadingContainer}>
         <CircularProgress />
@@ -203,15 +261,29 @@ const EventDetails = ({
                 </Typography>
                 
                 <div className={classes.mapContainer}>
-                  <LoadScript googleMapsApiKey="AIzaSyAIni3U0Gz0lOG8kXrlxqGNq45AN7A9G9o">
-                    <GoogleMap
-                      mapContainerStyle={{ height: '100%', width: '100%' }}
-                      center={mapCenter}
-                      zoom={14}
+                  {googleApiKey ? (
+                    <LoadScript
+                      googleMapsApiKey={googleApiKey}
+                      onError={() => setMapError('Failed to load Google Maps. Please check your API key and network connection.')}
                     >
-                      <Marker position={mapCenter} />
-                    </GoogleMap>
-                  </LoadScript>
+                      <GoogleMap
+                        mapContainerStyle={{ height: '100%', width: '100%' }}
+                        center={mapCenter}
+                        zoom={14}
+                      >
+                        <Marker position={mapCenter} />
+                      </GoogleMap>
+                    </LoadScript>
+                  ) : (
+                    <Typography variant="body1" className={classes.errorMessage}>
+                      Google Maps API key is missing. Please set REACT_APP_GOOGLE_API_KEY in your .env file.
+                    </Typography>
+                  )}
+                  {mapError && (
+                    <Typography variant="body1" className={classes.errorMessage}>
+                      {mapError}
+                    </Typography>
+                  )}
                 </div>
               </Box>
             </div>
@@ -223,8 +295,11 @@ const EventDetails = ({
                 Tickets
               </Typography>
               
-              {tickets && tickets.length > 0 ? (
-                tickets.map((ticket) => (
+              {/* Display tickets from direct API call */}
+              {directApiLoading ? (
+                <Typography variant="body1">Loading tickets directly from API...</Typography>
+              ) : directApiTickets && directApiTickets.length > 0 ? (
+                directApiTickets.map((ticket) => (
                   <Card key={ticket._id} className={classes.ticketCard}>
                     <CardContent>
                       <Typography variant="h6" className={classes.ticketType}>
@@ -250,7 +325,7 @@ const EventDetails = ({
                             onChange={(e) => handleQuantityChange(ticket._id, e)}
                             label="Qty"
                           >
-                            {[...Array(Math.min(ticket.maxPerPurchase, 10)).keys()].map((i) => (
+                            {[...Array(Math.min(ticket.maxPerPurchase || 10, 10)).keys()].map((i) => (
                               <MenuItem key={i + 1} value={i + 1}>
                                 {i + 1}
                               </MenuItem>
@@ -263,9 +338,9 @@ const EventDetails = ({
                           color="primary"
                           startIcon={<LocalActivity />}
                           onClick={() => handleAddToCart(ticket)}
-                          disabled={!isAuthenticated || ticket.soldOut}
+                          disabled={!isAuthenticated || (ticket.soldOut === true)}
                         >
-                          {ticket.soldOut ? 'Sold Out' : 'Add to Cart'}
+                          {ticket.soldOut === true ? 'Sold Out' : 'Add to Cart'}
                         </Button>
                       </div>
                       
@@ -279,9 +354,33 @@ const EventDetails = ({
                 ))
               ) : (
                 <Typography variant="body1">
-                  No tickets available at this time.
+                  No tickets available from direct API. The event organizer hasn't added any tickets yet.
                 </Typography>
               )}
+              
+              {/* Display debug information */}
+              <div className={classes.debugSection}>
+                <Typography variant="h6">Debug Information</Typography>
+                <Typography variant="body2">Event ID: {id}</Typography>
+                <Typography variant="body2">Redux Tickets Count: {tickets ? tickets.length : 0}</Typography>
+                <Typography variant="body2">Direct API Tickets Count: {directApiTickets ? directApiTickets.length : 0}</Typography>
+                <Typography variant="body2">Redux Loading: {ticketsLoading ? 'Yes' : 'No'}</Typography>
+                <Typography variant="body2">Direct API Loading: {directApiLoading ? 'Yes' : 'No'}</Typography>
+                {directApiError && (
+                  <Typography variant="body2" color="error">
+                    Direct API Error: {directApiError}
+                  </Typography>
+                )}
+                <Button 
+                  variant="outlined" 
+                  color="primary" 
+                  size="small" 
+                  style={{ marginTop: '10px' }}
+                  onClick={() => window.location.reload()}
+                >
+                  Refresh Page
+                </Button>
+              </div>
             </Paper>
           </Grid>
         </Grid>

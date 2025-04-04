@@ -98,7 +98,7 @@ function TabPanel(props) {
   );
 }
 
-const Home = ({ getEvents, searchEvents, filterEventsByCategory, events: { events, filteredEvents, loading } }) => {
+const Home = ({ getEvents, searchEvents, filterEventsByCategory, events: { events, filteredEvents, loading }, auth: { isAuthenticated } }) => {
   const classes = useStyles();
   const [searchTerm, setSearchTerm] = useState('');
   const [tabValue, setTabValue] = useState(0);
@@ -155,20 +155,22 @@ const Home = ({ getEvents, searchEvents, filterEventsByCategory, events: { event
           <Typography variant="h5" align="center" paragraph>
             Discover concerts, sports, arts, comedy, and more. Get tickets to the events you love!
           </Typography>
-          <div className={classes.heroButtons}>
-            <Grid container spacing={2} justifyContent="center">
-              <Grid item>
-                <Button component={Link} to="/register" variant="contained" color="primary">
-                  Sign Up
-                </Button>
+          {!isAuthenticated && (
+            <div className={classes.heroButtons}>
+              <Grid container spacing={2} justifyContent="center">
+                <Grid item>
+                  <Button component={Link} to="/register" variant="contained" color="primary">
+                    Sign Up
+                  </Button>
+                </Grid>
+                <Grid item>
+                  <Button component={Link} to="/login" variant="outlined" color="secondary">
+                    Login
+                  </Button>
+                </Grid>
               </Grid>
-              <Grid item>
-                <Button component={Link} to="/login" variant="outlined" color="secondary">
-                  Login
-                </Button>
-              </Grid>
-            </Grid>
-          </div>
+            </div>
+          )}
         </Container>
       </div>
       <Container className={classes.cardGrid} maxWidth="lg">
@@ -274,10 +276,12 @@ Home.propTypes = {
   searchEvents: PropTypes.func.isRequired,
   filterEventsByCategory: PropTypes.func.isRequired,
   events: PropTypes.object.isRequired,
+  auth: PropTypes.object.isRequired
 };
 
 const mapStateToProps = (state) => ({
   events: state.events,
+  auth: state.auth
 });
 
 export default connect(mapStateToProps, { getEvents, searchEvents, filterEventsByCategory })(Home);

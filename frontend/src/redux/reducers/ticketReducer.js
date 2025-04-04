@@ -4,7 +4,8 @@ import {
   TICKET_ERROR,
   CREATE_TICKET,
   UPDATE_TICKET,
-  DELETE_TICKET
+  DELETE_TICKET,
+  SET_LOADING
 } from '../constants/actionTypes';
 
 const initialState = {
@@ -18,6 +19,11 @@ const ticketReducer = (state = initialState, action) => {
   const { type, payload } = action;
 
   switch (type) {
+    case SET_LOADING:
+      return {
+        ...state,
+        loading: true
+      };
     case GET_TICKETS:
       return {
         ...state,

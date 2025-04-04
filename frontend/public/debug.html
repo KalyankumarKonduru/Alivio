@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Event Navigation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Debug Event Navigation</h1>
+    
+    <div class="card">
+        <h2>Test Event</h2>
+        <p><strong>Event ID:</strong> 67ef428399a428d2bac9547d</p>
+        <p><strong>Title:</strong> Test Concert</p>
+        <p><a href="/events/67ef428399a428d2bac9547d" class="button">View Event Details</a></p>
+    </div>
+    
+    <div class="card">
+        <h2>Direct API Testing</h2>
+        <p>Click the button below to test the API endpoint directly:</p>
+        <button onclick="testApi()" class="button">Test API</button>
+        <div id="apiResult" style="margin-top: 10px;"></div>
+    </div>
+    
+    <script>
+        // Function to test the API
+        async function testApi() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.innerHTML = '<p>Testing API...</p>';
+            
+            try {
+                const eventId = '67ef428399a428d2bac9547d';
+                const response = await fetch(`/api/tickets/event/${eventId}`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h3>API Response:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>API Error:</h3>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
