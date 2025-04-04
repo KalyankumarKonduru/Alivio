@@ -15,16 +15,19 @@ export const getTicketsByEvent = eventId => async dispatch => {
   dispatch({ type: SET_LOADING });
   
   try {
+    console.log('Fetching tickets for event ID:', eventId);
     const res = await axios.get(`/api/tickets/event/${eventId}`);
+    console.log('Tickets response:', res.data);
 
     dispatch({
       type: GET_TICKETS,
       payload: res.data.data
     });
   } catch (err) {
+    console.error('Error fetching tickets:', err);
     dispatch({
       type: TICKET_ERROR,
-      payload: err.response.data.message
+      payload: err.response?.data?.message || 'Error fetching tickets'
     });
   }
 };

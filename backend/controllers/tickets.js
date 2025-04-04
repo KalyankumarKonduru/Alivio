@@ -203,18 +203,58 @@ exports.deleteTicket = async (req, res) => {
 // @access  Public
 exports.getTicketsByEvent = async (req, res) => {
   try {
-    const tickets = await Ticket.find({ event: req.params.eventId });
+    console.log('Getting tickets for event ID:', req.params.eventId);
+    
+    // Make sure to include virtuals in the response
+    const tickets = await Ticket.find({ event: req.params.eventId, active: true });
+    console.log('Found', tickets.length, 'tickets for this event');
+    
+    if (tickets.length === 0) {
+      // If no tickets found, try to check if the event exists
+      const Event = require('../models/Event');
+      const event = await Event.findById(req.params.eventId);
+      console.log('Event exists:', !!event);
+      
+      // Return early if no tickets
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+        debug: {
+          eventExists: !!event,
+          requestedEventId: req.params.eventId
+        }
+      });
+    }
+    
+    // Convert Mongoose documents to JSON to include virtuals
+    const ticketsWithVirtuals = tickets.map(ticket => {
+      const ticketObj = ticket.toObject({ virtuals: true });
+      // Add soldOut property explicitly if it's not already included
+      ticketObj.soldOut = ticket.quantitySold >= ticket.quantity;
+      ticketObj.available = ticket.quantity - ticket.quantitySold;
+      return ticketObj;
+    });
+    
+    console.log('Returning tickets with virtuals:', ticketsWithVirtuals.length);
     
     res.status(200).json({
       success: true,
       count: tickets.length,
-      data: tickets
+      data: ticketsWithVirtuals,
+      debug: {
+        requestedEventId: req.params.eventId
+      }
     });
   } catch (err) {
-    console.error(err);
+    console.error('Error getting tickets:', err);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: err.message,
+      debug: {
+        requestedEventId: req.params.eventId
+      }
     });
   }
 };

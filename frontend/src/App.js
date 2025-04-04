@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import store from './redux/store';
 import setAuthToken from './utils/setAuthToken';
+import { loadUser } from './redux/actions/authActions';
 
 // Components
 import Navbar from './components/layout/Navbar';
@@ -30,9 +31,19 @@ import OrganizerAttendees from './pages/OrganizerAttendees';
 import OrganizerAnalytics from './pages/OrganizerAnalytics';
 import NotFound from './pages/NotFound';
 
-// Check for token in localStorage
+// Import cart actions
+import { getCart } from './redux/actions/cartActions';
+
+// Check for token in localStorage and set auth token
 if (localStorage.token) {
   setAuthToken(localStorage.token);
+  // Load user data when token exists
+  store.dispatch(loadUser());
+  // Load cart data
+  store.dispatch(getCart());
+} else {
+  // Even if not logged in, load cart from localStorage
+  store.dispatch(getCart());
 }
 
 const App = () => {

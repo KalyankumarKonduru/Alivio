@@ -1,10 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import {
   Container,
   Typography,
-  Grid,
   Paper,
   Button,
   Table,
@@ -15,8 +14,8 @@ import {
   TableRow,
   Box,
   CircularProgress,
-  makeStyles
-} from '@material-ui/core';
+  makeStyles,
+} from '@material-ui/core'; // Removed unused Grid import
 import { Add, Edit, Delete, Visibility } from '@material-ui/icons';
 import { useNavigate } from 'react-router-dom';
 import { deleteEvent, getEventsByOrganizer } from '../redux/actions/eventActions';
@@ -54,49 +53,97 @@ const useStyles = makeStyles((theme) => ({
     alignItems: 'center',
     height: '400px',
   },
+  errorMessage: {
+    textAlign: 'center',
+    padding: theme.spacing(4),
+    color: theme.palette.error.main,
+  },
+  feedbackMessage: {
+    position: 'fixed',
+    top: theme.spacing(2),
+    right: theme.spacing(2),
+    padding: theme.spacing(1, 2),
+    borderRadius: theme.shape.borderRadius,
+    zIndex: 1000,
+    boxShadow: theme.shadows[3],
+  },
+  successMessage: {
+    backgroundColor: theme.palette.success.light,
+    color: theme.palette.success.contrastText,
+  },
+  errorMessageFeedback: {
+    backgroundColor: theme.palette.error.light,
+    color: theme.palette.error.contrastText,
+  },
 }));
 
-const OrganizerEvents = ({ getEventsByOrganizer, deleteEvent, events: { organizerEvents, loading } }) => {
+const OrganizerEvents = ({ getEventsByOrganizer, deleteEvent, events: { organizerEvents, loading, error } }) => {
   const classes = useStyles();
   const navigate = useNavigate();
-  
+  const [deletingEventId, setDeletingEventId] = useState(null); // Track which event is being deleted
+  const [feedback, setFeedback] = useState({ show: false, message: '', severity: 'success' }); // Feedback state
+
   useEffect(() => {
     getEventsByOrganizer();
   }, [getEventsByOrganizer]);
-  
+
   const handleCreateEvent = () => {
     navigate('/organizer/events/create');
   };
-  
+
   const handleEditEvent = (eventId) => {
     navigate(`/organizer/events/edit/${eventId}`);
   };
-  
+
   const handleViewEvent = (eventId) => {
     navigate(`/events/${eventId}`);
   };
-  
-  const handleDeleteEvent = (eventId) => {
+
+  const handleDeleteEvent = async (eventId) => {
     if (window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-      deleteEvent(eventId);
+      setDeletingEventId(eventId); // Disable the delete button for this event
+      try {
+        await deleteEvent(eventId); // Assuming deleteEvent returns a promise
+        setFeedback({ show: true, message: 'Event deleted successfully!', severity: 'success' });
+      } catch (err) {
+        setFeedback({ show: true, message: 'Failed to delete event. Please try again.', severity: 'error' });
+      } finally {
+        setDeletingEventId(null); // Re-enable the delete button
+      }
+
+      // Hide the feedback message after 6 seconds
+      setTimeout(() => {
+        setFeedback((prev) => ({ ...prev, show: false }));
+      }, 6000);
     }
   };
-  
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'upcoming':
-        return { bgcolor: 'info.light', color: 'info.contrastText' };
+        return { bgcolor: '#BBDEFB', color: '#1565C0' }; // Blue
       case 'ongoing':
-        return { bgcolor: 'success.light', color: 'success.contrastText' };
+        return { bgcolor: '#C8E6C9', color: '#2E7D32' }; // Green
       case 'completed':
-        return { bgcolor: 'text.disabled', color: 'background.paper' };
+        return { bgcolor: '#E0E0E0', color: '#424242' }; // Grey
       case 'cancelled':
-        return { bgcolor: 'error.light', color: 'error.contrastText' };
+        return { bgcolor: '#FFCDD2', color: '#C62828' }; // Red
       default:
-        return { bgcolor: 'grey.300', color: 'text.primary' };
+        return { bgcolor: '#B0BEC5', color: '#263238' }; // Default grey
     }
   };
-  
+
+  const formatDate = (dateString) => {
+    const options = { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
   if (loading) {
     return (
       <div className={classes.loadingContainer}>
@@ -104,9 +151,39 @@ const OrganizerEvents = ({ getEventsByOrganizer, deleteEvent, events: { organize
       </div>
     );
   }
-  
+
+  if (error) {
+    return (
+      <Container className={classes.container}>
+        <Typography variant="h6" className={classes.errorMessage}>
+          Failed to load events. Please try again later.
+        </Typography>
+        <Box textAlign="center">
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => getEventsByOrganizer()}
+          >
+            Retry
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
+
   return (
     <Container className={classes.container}>
+      {/* Feedback Message */}
+      {feedback.show && (
+        <Typography
+          className={`${classes.feedbackMessage} ${
+            feedback.severity === 'success' ? classes.successMessage : classes.errorMessageFeedback
+          }`}
+        >
+          {feedback.message}
+        </Typography>
+      )}
+
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Typography variant="h4" gutterBottom>
           My Events
@@ -130,7 +207,7 @@ const OrganizerEvents = ({ getEventsByOrganizer, deleteEvent, events: { organize
               <TableHead>
                 <TableRow>
                   <TableCell>Event Name</TableCell>
-                  <TableCell>Date</TableCell>
+                  <TableCell>Date & Time</TableCell>
                   <TableCell>Venue</TableCell>
                   <TableCell>Tickets Sold</TableCell>
                   <TableCell>Status</TableCell>
@@ -141,9 +218,7 @@ const OrganizerEvents = ({ getEventsByOrganizer, deleteEvent, events: { organize
                 {organizerEvents.map((event) => (
                   <TableRow key={event._id}>
                     <TableCell>{event.title}</TableCell>
-                    <TableCell>
-                      {new Date(event.date).toLocaleDateString()}
-                    </TableCell>
+                    <TableCell>{formatDate(event.date)}</TableCell>
                     <TableCell>
                       {event.venue.name}, {event.venue.address.city}
                     </TableCell>
@@ -188,8 +263,9 @@ const OrganizerEvents = ({ getEventsByOrganizer, deleteEvent, events: { organize
                         className={classes.actionButton}
                         startIcon={<Delete />}
                         onClick={() => handleDeleteEvent(event._id)}
+                        disabled={deletingEventId === event._id}
                       >
-                        Delete
+                        {deletingEventId === event._id ? 'Deleting...' : 'Delete'}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -223,11 +299,11 @@ const OrganizerEvents = ({ getEventsByOrganizer, deleteEvent, events: { organize
 OrganizerEvents.propTypes = {
   getEventsByOrganizer: PropTypes.func.isRequired,
   deleteEvent: PropTypes.func.isRequired,
-  events: PropTypes.object.isRequired
+  events: PropTypes.object.isRequired,
 };
 
-const mapStateToProps = state => ({
-  events: state.events
+const mapStateToProps = (state) => ({
+  events: state.events,
 });
 
 export default connect(mapStateToProps, { getEventsByOrganizer, deleteEvent })(OrganizerEvents);

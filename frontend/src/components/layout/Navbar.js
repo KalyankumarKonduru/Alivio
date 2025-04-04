@@ -1,10 +1,10 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { AppBar, Toolbar, Typography, Button, IconButton, Badge, Menu, MenuItem, makeStyles } from '@material-ui/core';
 import { ShoppingCart, AccountCircle, ExitToApp, Dashboard } from '@material-ui/icons';
-import { logout } from '../../redux/actions/authActions';
+import { logout, loadUser } from '../../redux/actions/authActions';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -33,10 +33,18 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Navbar = ({ auth: { isAuthenticated, loading, user }, logout, cart: { cartItems } }) => {
+const Navbar = ({ auth: { isAuthenticated, loading, user }, logout, loadUser, cart: { cartItems } }) => {
   const classes = useStyles();
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
+  const navigate = useNavigate(); // Use useNavigate for redirection
+  
+  // Load user data when component mounts if token exists
+  useEffect(() => {
+    if (localStorage.token && !isAuthenticated) {
+      loadUser();
+    }
+  }, [loadUser, isAuthenticated]);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -44,6 +52,12 @@ const Navbar = ({ auth: { isAuthenticated, loading, user }, logout, cart: { cart
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleClose(); // Close the menu
+    logout(); // Dispatch the logout action
+    navigate('/login'); // Redirect to the login page
   };
 
   const authLinks = (
@@ -90,10 +104,7 @@ const Navbar = ({ auth: { isAuthenticated, loading, user }, logout, cart: { cart
         )}
         <MenuItem component={Link} to="/profile" onClick={handleClose}>Profile</MenuItem>
         <MenuItem component={Link} to="/orders" onClick={handleClose}>My Orders</MenuItem>
-        <MenuItem onClick={() => {
-          handleClose();
-          logout();
-        }}>
+        <MenuItem onClick={handleLogout}> {/* Update the onClick handler */}
           <ExitToApp fontSize="small" style={{ marginRight: '8px' }} />
           Logout
         </MenuItem>
@@ -138,7 +149,11 @@ const Navbar = ({ auth: { isAuthenticated, loading, user }, logout, cart: { cart
           <Button component={Link} to="/" color="inherit">
             Events
           </Button>
-          {!loading && (isAuthenticated ? authLinks : guestLinks)}
+          {!loading && (
+            <>
+              {isAuthenticated ? authLinks : guestLinks}
+            </>
+          )}
         </Toolbar>
       </AppBar>
     </div>
@@ -147,6 +162,7 @@ const Navbar = ({ auth: { isAuthenticated, loading, user }, logout, cart: { cart
 
 Navbar.propTypes = {
   logout: PropTypes.func.isRequired,
+  loadUser: PropTypes.func.isRequired,
   auth: PropTypes.object.isRequired,
   cart: PropTypes.object.isRequired
 };
@@ -156,4 +172,4 @@ const mapStateToProps = state => ({
   cart: state.cart
 });
 
-export default connect(mapStateToProps, { logout })(Navbar);
+export default connect(mapStateToProps, { logout, loadUser })(Navbar);
