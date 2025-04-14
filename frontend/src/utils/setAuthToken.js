@@ -3,7 +3,7 @@ import axios from 'axios';
 const apiBaseUrl = process.env.REACT_APP_API_URL;
 
 // Example API call
-axios.get(`${apiBaseUrl}/api/https://alivio.onrender.com`)
+axios.get(`${apiBaseUrl}/api/events`)
   .then(response => {
     console.log('Data:', response.data);
   })
