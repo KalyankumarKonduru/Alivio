@@ -423,6 +423,7 @@ exports.getEventsByOrganizer = async (req, res) => {
 // @desc    Search events
 // @route   GET /api/events/search
 // @access  Public
+// In your backend controller
 exports.searchEvents = async (req, res) => {
   try {
     const { keyword } = req.query;
@@ -434,6 +435,7 @@ exports.searchEvents = async (req, res) => {
       });
     }
 
+<<<<<<< HEAD
     const events = await Event.find({
       $or: [
         { title: { $regex: keyword, $options: 'i' } },
@@ -441,6 +443,18 @@ exports.searchEvents = async (req, res) => {
         { 'venue.name': { $regex: keyword, $options: 'i' } },
         { 'venue.address.city': { $regex: keyword, $options: 'i' } },
         { 'venue.address.country': { $regex: keyword, $options: 'i' } },
+=======
+    // Create case-insensitive search regex
+    const searchRegex = new RegExp(keyword, 'i');
+    
+    const events = await Event.find({
+      $or: [
+        { title: { $regex: searchRegex } },
+        { description: { $regex: searchRegex } },
+        { 'venue.name': { $regex: searchRegex } },
+        { 'venue.address.city': { $regex: searchRegex } },
+        { 'venue.address.country': { $regex: searchRegex } },
+>>>>>>> 75a19f2 (changes done to search and home page)
       ],
     }).populate('organizer', 'firstName lastName');
 
@@ -450,7 +464,7 @@ exports.searchEvents = async (req, res) => {
       data: events,
     });
   } catch (err) {
-    console.error(err);
+    console.error('Search error:', err);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -461,12 +475,19 @@ exports.searchEvents = async (req, res) => {
 // @desc    Get events by category
 // @route   GET /api/events/category/:category
 // @access  Public
+// In your backend controller (events.js)
 exports.getEventsByCategory = async (req, res) => {
   try {
+<<<<<<< HEAD
     const events = await Event.find({ category: req.params.category }).populate(
       'organizer',
       'firstName lastName'
     );
+=======
+    const events = await Event.find({ 
+      category: req.params.category 
+    }).populate('organizer', 'firstName lastName');
+>>>>>>> 75a19f2 (changes done to search and home page)
 
     res.status(200).json({
       success: true,

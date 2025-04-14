@@ -110,35 +110,47 @@ export const deleteEvent = id => async dispatch => {
 };
 
 // Search events
+// Search events action
 export const searchEvents = keyword => async dispatch => {
   dispatch({ type: SET_LOADING });
+  
   try {
-    const res = await axios.get(`/api/events/search?keyword=${keyword}`);
+    console.log('Searching for:', keyword); // Debug log
+    const res = await axios.get(`/api/events/search?keyword=${encodeURIComponent(keyword)}`);
+    console.log('Search results:', res.data); // Debug log
+    
     dispatch({
       type: SEARCH_EVENTS,
       payload: res.data.data
     });
   } catch (err) {
+    console.error('Search error:', err);
     dispatch({
       type: EVENT_ERROR,
-      payload: err.response.data.message
+      payload: err.response?.data?.message || 'Error searching events'
     });
   }
 };
 
 // Filter events by category
+// Filter events by category
 export const filterEventsByCategory = category => async dispatch => {
   dispatch({ type: SET_LOADING });
+  
   try {
-    const res = await axios.get(`/api/events/category/${category}`);
+    console.log('Filtering by category:', category); // Debug log
+    const res = await axios.get(`/api/events/category/${encodeURIComponent(category)}`);
+    console.log('Filter results:', res.data); // Debug log
+    
     dispatch({
       type: FILTER_EVENTS,
       payload: res.data.data
     });
   } catch (err) {
+    console.error('Filter error:', err);
     dispatch({
       type: EVENT_ERROR,
-      payload: err.response.data.message
+      payload: err.response?.data?.message || 'Error filtering events'
     });
   }
 };

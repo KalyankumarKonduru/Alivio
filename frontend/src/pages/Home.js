@@ -118,28 +118,35 @@ const Home = ({ getEvents, searchEvents, filterEventsByCategory, events: { event
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
+    // Optional: Add real-time search capability by uncommenting the line below
+    if (e.target.value.trim()) searchEvents(e.target.value);
   };
-
+  
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchTerm.trim()) {
       searchEvents(searchTerm);
     } else {
-      getEvents();
+      getEvents(); // Reset to show all events if search is empty
     }
   };
 
+  
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
     
     const categories = ['Music', 'Sports', 'Arts & Theater', 'Family', 'Comedy', 'Festivals'];
+    console.log('Tab clicked:', newValue);
+    
     if (newValue === 0) {
+      console.log('Getting all events');
       getEvents();
     } else {
-      filterEventsByCategory(categories[newValue - 1]);
+      const selectedCategory = categories[newValue - 1];
+      console.log('Filtering by category:', selectedCategory);
+      filterEventsByCategory(selectedCategory);
     }
   };
-
   const formatDate = (dateString) => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
     return new Date(dateString).toLocaleDateString(undefined, options);
