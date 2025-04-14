@@ -435,15 +435,6 @@ exports.searchEvents = async (req, res) => {
       });
     }
 
-<<<<<<< HEAD
-    const events = await Event.find({
-      $or: [
-        { title: { $regex: keyword, $options: 'i' } },
-        { description: { $regex: keyword, $options: 'i' } },
-        { 'venue.name': { $regex: keyword, $options: 'i' } },
-        { 'venue.address.city': { $regex: keyword, $options: 'i' } },
-        { 'venue.address.country': { $regex: keyword, $options: 'i' } },
-=======
     // Create case-insensitive search regex
     const searchRegex = new RegExp(keyword, 'i');
     
@@ -454,7 +445,6 @@ exports.searchEvents = async (req, res) => {
         { 'venue.name': { $regex: searchRegex } },
         { 'venue.address.city': { $regex: searchRegex } },
         { 'venue.address.country': { $regex: searchRegex } },
->>>>>>> 75a19f2 (changes done to search and home page)
       ],
     }).populate('organizer', 'firstName lastName');
 
@@ -478,16 +468,9 @@ exports.searchEvents = async (req, res) => {
 // In your backend controller (events.js)
 exports.getEventsByCategory = async (req, res) => {
   try {
-<<<<<<< HEAD
-    const events = await Event.find({ category: req.params.category }).populate(
-      'organizer',
-      'firstName lastName'
-    );
-=======
     const events = await Event.find({ 
       category: req.params.category 
     }).populate('organizer', 'firstName lastName');
->>>>>>> 75a19f2 (changes done to search and home page)
 
     res.status(200).json({
       success: true,
