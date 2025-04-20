@@ -126,7 +126,7 @@ const Footer = () => {
           </Grid>
         </Grid>
         <Typography variant="body2" className={classes.copyright}>
-          © {currentYear} TicketMaster Clone. All rights reserved.
+          © {currentYear} Alivio. All rights reserved.
         </Typography>
       </Container>
     </footer>
