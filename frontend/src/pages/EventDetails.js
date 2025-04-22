@@ -359,7 +359,7 @@ const EventDetails = ({
               )}
               
               {/* Display debug information */}
-              <div className={classes.debugSection}>
+              {/* <div className={classes.debugSection}>
                 <Typography variant="h6">Debug Information</Typography>
                 <Typography variant="body2">Event ID: {id}</Typography>
                 <Typography variant="body2">Redux Tickets Count: {tickets ? tickets.length : 0}</Typography>
@@ -380,7 +380,7 @@ const EventDetails = ({
                 >
                   Refresh Page
                 </Button>
-              </div>
+              </div> */}
             </Paper>
           </Grid>
         </Grid>
